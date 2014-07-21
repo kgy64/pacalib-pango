@@ -1,0 +1,6 @@
+.*.sw?
+*.depend
+*.o
+/bin
+/tags
+/cscope*

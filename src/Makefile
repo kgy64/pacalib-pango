@@ -2,7 +2,7 @@
 # This is the Linux implementation
 #
 
-NAME                 =  PaCaLib_Base
+NAME                 =  PaCaLib_Linux
 VERS_MAJOR           =  0
 VERS_MINOR           =  1
 
