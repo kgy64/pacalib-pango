@@ -14,6 +14,7 @@
 #include <pacalib/pacalib.h>
 #include <Debug/Debug.h>
 
+#include <pango/pangocairo.h>
 #include <boost/shared_ptr.hpp>
 
 namespace PaCaLinux
@@ -24,45 +25,45 @@ namespace PaCaLinux
         Surface(int width, int height);
         VIRTUAL_IF_DEBUG ~Surface();
 
+        inline cairo_surface_t * get(void)
+        {
+            return mySurface;
+        }
+
+        inline const cairo_surface_t * get(void) const
+        {
+            return mySurface;
+        }
+
         inline void * getData(void)
         {
-            return myData.get();
+            return cairo_image_surface_get_data(get());
         }
 
         inline const void * getData(void) const
         {
-            return myData.get();
+            return cairo_image_surface_get_data(const_cast<cairo_surface_t*>(get()));
         }
 
         inline int getWidth(void) const
         {
-            return myWidth;
+            return cairo_image_surface_get_width(const_cast<cairo_surface_t*>(get()));
         }
 
         inline int getPhysicalWidth(void) const
         {
-            return myWidth;
+            return cairo_image_surface_get_stride(const_cast<cairo_surface_t*>(get())) / 4; // Note: always using 32-bit pixels
         }
 
         inline int getHeight(void) const
         {
-            return myHeight;
+            return cairo_image_surface_get_height(const_cast<cairo_surface_t*>(get()));
         }
 
-        void DrawText(const char * text, float size);
-
      protected:
-        struct argb
-        {
-            uint8_t a, r, g, b;
+        cairo_surface_t * mySurface;
 
-        }; // struct PaCaLinux::Surface::argb
-
-        int myWidth;
-
-        int myHeight;
-
-        boost::scoped_array<argb> myData;
+        static const char * GetErrorMessage(cairo_status_t status);
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Surface");
@@ -71,8 +72,6 @@ namespace PaCaLinux
 
     class Target: public PaCaLib::Target
     {
-        Surface mySurface;
-
      public:
         Target(int width, int height);
         virtual ~Target();
@@ -103,6 +102,21 @@ namespace PaCaLinux
         virtual void Paint(void) override;
         virtual void Paint(double alpha) override;
         virtual void Operator(PaCaLib::Oper op) override;
+
+     protected:
+        double myWidth;
+
+        double myHeight;
+
+        Surface mySurface;
+
+        cairo_t * myCairo;
+
+        PangoFontDescription * myFontDescription;
+
+        double myTextOutline;
+
+        PaCaLib::Colour myTextOutlineColour;
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Target");

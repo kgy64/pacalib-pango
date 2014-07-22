@@ -8,6 +8,8 @@ VERS_MINOR           =  1
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+BASE_LIBRARIES       =  pangocairo
+
 export SRCDIR        =  .
 
 .PHONY: all
