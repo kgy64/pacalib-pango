@@ -25,14 +25,14 @@ PaCaLinux::Surface::Surface(int width, int height):
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  ASSERT(cairo_surface_status(mySurface) == CAIRO_STATUS_SUCCESS, "Cairo: creating surface failed with " << GetErrorMessage(cairo_surface_status(mySurface)));
- SYS_DEBUG(DL_INFO1, "Created surface: " << myWidth << "x" << myHeight << " at " << mySurface);
+ SYS_DEBUG(DL_INFO1, "Created surface: " << getWidth() << "x" << getHeight() << " at " << mySurface);
 }
 
 PaCaLinux::Surface::~Surface()
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  cairo_surface_destroy(mySurface);
- SYS_DEBUG(DL_INFO1, "Deleted surface: " << myWidth << "x" << myHeight);
+ SYS_DEBUG(DL_INFO1, "Deleted surface: " << getWidth() << "x" << getHeight());
 }
 
 const char * PaCaLinux::Surface::GetErrorMessage(cairo_status_t status)
