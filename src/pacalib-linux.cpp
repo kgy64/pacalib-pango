@@ -282,7 +282,7 @@ double Target::DrawText(double x, double y, PaCaLib::TextMode mode, const char *
 
  Threads::Lock _l(myTextMutex);
 
- cairo_save(myCairo);
+ CairoSave _s(myCairo);
 
  SYS_DEBUG(DL_INFO1, "saved " << myCairo);
 
@@ -350,9 +350,6 @@ double Target::DrawText(double x, double y, PaCaLib::TextMode mode, const char *
 
  g_object_unref(layout);
  SYS_DEBUG(DL_INFO1, "unref ok");
-
- cairo_restore(myCairo);
- SYS_DEBUG(DL_INFO1, "cairo_restore() ok");
 
  return (2.0 * h) * text_width_half;
 }

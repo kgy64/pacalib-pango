@@ -20,6 +20,25 @@
 
 namespace PaCaLinux
 {
+    class CairoSave
+    {
+     public:
+        inline CairoSave(cairo_t * cairo):
+            cairo(cairo)
+        {
+            cairo_save(cairo);
+        }
+
+        inline ~CairoSave()
+        {
+            cairo_restore(cairo);
+        }
+
+     private:
+        cairo_t * cairo;
+
+    }; // class PaCaLinux::CairoSave
+
     class Surface
     {
      public:
