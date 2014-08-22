@@ -11,6 +11,7 @@
 #ifndef __SRC_PACALIB_LINUX_H_INCLUDED__
 #define __SRC_PACALIB_LINUX_H_INCLUDED__
 
+#include <Threads/Mutex.h>
 #include <pacalib/pacalib.h>
 #include <Debug/Debug.h>
 
@@ -121,9 +122,11 @@ namespace PaCaLinux
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Target");
 
+        static Threads::Mutex myTextMutex;
+
     }; // class Target
 
-} // namespace PaCaLib
+} // namespace PaCaLinux
 
 #endif /* __SRC_PACALIB_LINUX_H_INCLUDED__ */
 

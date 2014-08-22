@@ -95,6 +95,8 @@ PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height)
  return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height));
 }
 
+Threads::Mutex Target::myTextMutex;
+
 PaCaLinux::Target::Target(int width, int height):
     myWidth(width),
     myHeight(height),
@@ -277,6 +279,8 @@ double Target::DrawText(double x, double y, PaCaLib::TextMode mode, const char *
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
+
+ Threads::Lock _l(myTextMutex);
 
  cairo_save(myCairo);
 
