@@ -275,7 +275,7 @@ void Target::ClosePath(void)
  cairo_close_path(myCairo);
 }
 
-double Target::DrawText(double x, double y, PaCaLib::TextMode mode, const char * text, double size, double aspect)
+double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, const char * text, double size, double offset, double aspect)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
@@ -320,7 +320,7 @@ double Target::DrawText(double x, double y, PaCaLib::TextMode mode, const char *
  double text_height_half = (double)height / (2*PANGO_SCALE);
 
  double x_pos = x/h - text_width_half;
- double y_pos = y/v - text_height_half;
+ double y_pos = y/v - text_height_half - (double)height * offset / PANGO_SCALE;
 
  switch (mode) {
     case PaCaLib::LEFT:

@@ -116,7 +116,7 @@ namespace PaCaLinux
         virtual void NewPath(void) override;
         virtual void NewSubPath(void) override;
         virtual void ClosePath(void) override;
-        virtual double DrawText(double x, double y, PaCaLib::TextMode mode, const char * text, double size, double aspect = 1.0) override;
+        virtual double DrawTextInternal(double x, double y, PaCaLib::TextMode mode, const char * text, double size, double offset, double aspect = 1.0) override;
         virtual void SetTextOutlineColour(double r, double g, double b, double a = 1.0) override;
         virtual void SetTextOutline(double outline) override;
         virtual void Paint(void) override;
