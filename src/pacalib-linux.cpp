@@ -154,49 +154,28 @@ const void * Target::GetPixelData(void) const
  return mySurface.getData();
 }
 
-void Target::Scale(double w, double h)
+void Target::Scale(float w, float h)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Scale(" << w << ", " << h << ")");
  cairo_scale(myCairo, w, h);
 }
 
-void Target::Stroke(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Stroke()");
- cairo_stroke(myCairo);
-}
-
-void Target::Fill(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Fill()");
- cairo_fill(myCairo);
-}
-
-void Target::FillPreserve(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "FillPreserve()");
- cairo_fill_preserve(myCairo);
-}
-
-void Target::SetLineWidth(double width)
+void Target::SetLineWidth(float width)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetLineWidth(" << width << ")");
  cairo_set_line_width(myCairo, width);
 }
 
-void Target::Move(double x, double y)
+void Target::Move(float x, float y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Move(" << x << ", " << y << ")");
  cairo_move_to(myCairo, x, y);
 }
 
-void Target::Line(double x, double y)
+void Target::Line(float x, float y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Line(" << x << ", " << y << ")");
@@ -219,14 +198,14 @@ void Target::SetLineCap(PaCaLib::LineCap mode)
  cairo_set_line_cap(myCairo, linecap);
 }
 
-void Target::SetColour(double r, double g, double b)
+void Target::SetColour(float r, float g, float b)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ")");
  cairo_set_source_rgb(myCairo, r, g, b);
 }
 
-void Target::SetColour(double r, double g, double b, double a)
+void Target::SetColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ", " << a << ")");
@@ -240,42 +219,21 @@ void Target::SetColour(const PaCaLib::Colour & col)
  cairo_set_source_rgba(myCairo, col.r, col.g, col.b, col.a);
 }
 
-void Target::Rectangle(double x, double y, double w, double h)
+void Target::Rectangle(float x, float y, float w, float h)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Rectangle(" << x << ", " << y << ", " << w << ", " << h << ")");
  cairo_rectangle(myCairo, x, y, w, h);
 }
 
-void Target::Arc(double xc, double yc, double r, double a1, double a2)
+void Target::Arc(float xc, float yc, float r, float a1, float a2)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Arc(" << xc << ", " << yc << ", " << r << ", " << a1 << ", " << a2 << ")");
  cairo_arc(myCairo, xc, yc, r, a1, a2);
 }
 
-void Target::NewPath(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "NewPath()");
- cairo_new_path(myCairo);
-}
-
-void Target::NewSubPath(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "NewSubPath()");
- cairo_new_sub_path(myCairo);
-}
-
-void Target::ClosePath(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "ClosePath()");
- cairo_close_path(myCairo);
-}
-
-double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, const char * text, double size, double offset, double aspect)
+float Target::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
@@ -289,8 +247,8 @@ double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, cons
 
  SYS_DEBUG(DL_INFO1, "saved " << myCairo);
 
- double h = 0.70;
- double v = 0.70; // Heuristic values :-)
+ float h = 0.70;
+ float v = 0.70; // Heuristic values :-)
 
  h *= size * aspect;
  v *= size;
@@ -316,11 +274,11 @@ double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, cons
  int width, height;
  pango_layout_get_size(layout, &width, &height);
  SYS_DEBUG(DL_INFO1, "pango_layout_get_size(): w=" << width << ", h=" << height);
- double text_width_half = (double)width / (2*PANGO_SCALE);
- double text_height_half = (double)height / (2*PANGO_SCALE);
+ float text_width_half = (float)width / (2*PANGO_SCALE);
+ float text_height_half = (float)height / (2*PANGO_SCALE);
 
- double x_pos = x/h - text_width_half;
- double y_pos = y/v - text_height_half - (double)height * offset / PANGO_SCALE;
+ float x_pos = x/h - text_width_half;
+ float y_pos = y/v - text_height_half - (float)height * offset / PANGO_SCALE;
 
  switch (mode) {
     case PaCaLib::LEFT:
@@ -340,14 +298,14 @@ double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, cons
 
  if (myTextOutline > 0.0) {
     SetLineWidth(text_height_half * myTextOutline);
-    Stroke();
+    cairo_stroke(myCairo);
  } else if (myTextOutline < 0.0) {
-    FillPreserve();
+    cairo_fill_preserve(myCairo);
     SetLineWidth(-text_height_half * myTextOutline);
     SetColour(myTextOutlineColour);
-    Stroke();
+    cairo_stroke(myCairo);
  } else {
-    Fill();
+    cairo_fill(myCairo);
  }
  SYS_DEBUG(DL_INFO1, "draw ok");
 
@@ -357,14 +315,14 @@ double Target::DrawTextInternal(double x, double y, PaCaLib::TextMode mode, cons
  return (2.0 * h) * text_width_half;
 }
 
-void Target::SetTextOutlineColour(double r, double g, double b, double a)
+void Target::SetTextOutlineColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetTextOutlineColour(" << r << ", " << g << ", " << b << ", " << a << ")");
  myTextOutlineColour = PaCaLib::Colour(r, g, b, a);
 }
 
-void Target::SetTextOutline(double outline)
+void Target::SetTextOutline(float outline)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetTextOutline(" << outline << ")");
@@ -378,7 +336,7 @@ void Target::Paint(void)
  cairo_paint(myCairo);
 }
 
-void Target::Paint(double alpha)
+void Target::Paint(float alpha)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint(" << alpha << ")");
@@ -405,6 +363,90 @@ void Target::Operator(PaCaLib::Oper op)
  }
 
  cairo_set_operator(myCairo, cairo_op);
+}
+
+PathPtr Target::NewPath(void)
+{
+ return PathPtr(new Path(*this));
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+ *                                                                                       *
+ *         class Path:                                                                   *
+ *                                                                                       *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+Path::Path(Target & parent):
+    parent(parent)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ Clear();
+}
+
+Path::~Path()
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+}
+
+void Path::Move(float x, float y)
+{
+ parent.Move(x, y);
+}
+
+void Path::Line(float x, float y)
+{
+ parent.Line(x, y);
+}
+
+void Path::Arc(float xc, float yc, float r, float a1, float a2)
+{
+ parent.Arc(xc, yc, r, a1, a2);
+}
+
+void Path::Close(void)
+{
+ cairo_close_path(parent.myCairo);
+}
+
+void Path::Clear(void)
+{
+ cairo_new_path(parent.myCairo);
+}
+
+void Path::SetLineWidth(float width)
+{
+ parent.SetLineWidth(width);
+}
+
+void Path::SetLineCap(PaCaLib::LineCap mode)
+{
+ parent.SetLineCap(mode);
+}
+
+void Path::Fill(void)
+{
+ cairo_fill_preserve(parent.myCairo);
+}
+
+void Path::Stroke(void)
+{
+ cairo_stroke(parent.myCairo);
+}
+
+void Path::SetColour(float r, float g, float b)
+{
+ parent.SetColour(r, g, b);
+}
+
+void Path::SetColour(float r, float g, float b, float a)
+{
+ parent.SetColour(r, g, b, a);
+}
+
+void Path::SetColour(const PaCaLib::Colour & col)
+{
+ parent.SetColour(col);
 }
 
 /* * * * * * * * * * * * * End - of - File * * * * * * * * * * * * * * */
