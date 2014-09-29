@@ -95,37 +95,16 @@ PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height)
  return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height));
 }
 
-Threads::Mutex Target::myTextMutex;
-
 PaCaLinux::Target::Target(int width, int height):
-    myWidth(width),
-    myHeight(height),
-    mySurface(width, height),
-    myCairo(cairo_create(mySurface.get())),
-    myTextOutline(0.0),
-    myTextOutlineColour(0.0, 0.0, 0.0, 1.0)
+    mySurface(width, height)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
 
- myFontDescription = pango_font_description_new();
- pango_font_description_set_family(myFontDescription, "serif");
- pango_font_description_set_weight(myFontDescription, PANGO_WEIGHT_NORMAL);
- // The font size is "2", because the output range is is -1 ... +1
- pango_font_description_set_absolute_size(myFontDescription, 2*PANGO_SCALE);
-
- // To be compatible with the OpenGL backend, set the coordinate ranges to -1.0 ... +1.0:
- cairo_translate(myCairo, myWidth/2, myHeight/2);
- Scale(myWidth/2, -myHeight/2);
-
- SYS_DEBUG(DL_INFO1, "myCairo at " << myCairo << ", font at " << myFontDescription << ", size=" << myWidth << "x" << myHeight);
 }
 
 PaCaLinux::Target::~Target()
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
-
- pango_font_description_free(myFontDescription);
- cairo_destroy(myCairo);
 
  SYS_DEBUG(DL_INFO1, "Deleted target (" << myWidth << "x" << myHeight << ")");
 }
@@ -154,35 +133,74 @@ const void * Target::GetPixelData(void) const
  return mySurface.getData();
 }
 
-void Target::Scale(float w, float h)
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+ *                                                                                       *
+ *         class Draw:                                                                   *
+ *                                                                                       *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+Threads::Mutex Draw::myTextMutex;
+
+Draw::Draw(PaCaLinux::Target & target):
+    target(target),
+    myCairo(cairo_create(target.getSurface().get())),
+    myTextOutline(0.0),
+    myTextOutlineColour(0.0, 0.0, 0.0, 1.0),
+    myWidth(target.GetWidth()),
+    myHeight(target.GetHeight())
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ myFontDescription = pango_font_description_new();
+ pango_font_description_set_family(myFontDescription, "serif");
+ pango_font_description_set_weight(myFontDescription, PANGO_WEIGHT_NORMAL);
+ // The font size is "2", because the output range is is -1 ... +1
+ pango_font_description_set_absolute_size(myFontDescription, 2*PANGO_SCALE);
+
+ // To be compatible with the OpenGL backend, set the coordinate ranges to -1.0 ... +1.0:
+ cairo_translate(myCairo, myWidth/2, myHeight/2);
+ cairo_scale(myCairo, myWidth/2, -myHeight/2);
+
+ SYS_DEBUG(DL_INFO1, "myCairo at " << myCairo << ", font at " << myFontDescription << ", size=" << myWidth << "x" << myHeight);
+}
+
+Draw::~Draw()
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ pango_font_description_free(myFontDescription);
+ cairo_destroy(myCairo);
+}
+
+void Draw::Scale(float w, float h)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Scale(" << w << ", " << h << ")");
  cairo_scale(myCairo, w, h);
 }
 
-void Target::SetLineWidth(float width)
+void Draw::SetLineWidth(float width)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetLineWidth(" << width << ")");
  cairo_set_line_width(myCairo, width);
 }
 
-void Target::Move(float x, float y)
+void Draw::Move(float x, float y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Move(" << x << ", " << y << ")");
  cairo_move_to(myCairo, x, y);
 }
 
-void Target::Line(float x, float y)
+void Draw::Line(float x, float y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Line(" << x << ", " << y << ")");
  cairo_line_to(myCairo, x, y);
 }
 
-void Target::SetLineCap(PaCaLib::LineCap mode)
+void Draw::SetLineCap(PaCaLib::LineCap mode)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetLineCap(" << (int)mode << ")");
@@ -198,42 +216,28 @@ void Target::SetLineCap(PaCaLib::LineCap mode)
  cairo_set_line_cap(myCairo, linecap);
 }
 
-void Target::SetColour(float r, float g, float b)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ")");
- cairo_set_source_rgb(myCairo, r, g, b);
-}
-
-void Target::SetColour(float r, float g, float b, float a)
+void Draw::SetColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ", " << a << ")");
  cairo_set_source_rgba(myCairo, r, g, b, a);
 }
 
-void Target::SetColour(const PaCaLib::Colour & col)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "SetColour(" << col << ")");
- cairo_set_source_rgba(myCairo, col.r, col.g, col.b, col.a);
-}
-
-void Target::Rectangle(float x, float y, float w, float h)
+void Draw::Rectangle(float x, float y, float w, float h)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Rectangle(" << x << ", " << y << ", " << w << ", " << h << ")");
  cairo_rectangle(myCairo, x, y, w, h);
 }
 
-void Target::Arc(float xc, float yc, float r, float a1, float a2)
+void Draw::Arc(float xc, float yc, float r, float a1, float a2)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Arc(" << xc << ", " << yc << ", " << r << ", " << a1 << ", " << a2 << ")");
  cairo_arc(myCairo, xc, yc, r, a1, a2);
 }
 
-float Target::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
+float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
@@ -302,7 +306,7 @@ float Target::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const c
  } else if (myTextOutline < 0.0) {
     cairo_fill_preserve(myCairo);
     SetLineWidth(-text_height_half * myTextOutline);
-    SetColour(myTextOutlineColour);
+    PaCaLib::Draw::SetColour(myTextOutlineColour);
     cairo_stroke(myCairo);
  } else {
     cairo_fill(myCairo);
@@ -315,35 +319,35 @@ float Target::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const c
  return (2.0 * h) * text_width_half;
 }
 
-void Target::SetTextOutlineColour(float r, float g, float b, float a)
+void Draw::SetTextOutlineColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetTextOutlineColour(" << r << ", " << g << ", " << b << ", " << a << ")");
  myTextOutlineColour = PaCaLib::Colour(r, g, b, a);
 }
 
-void Target::SetTextOutline(float outline)
+void Draw::SetTextOutline(float outline)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetTextOutline(" << outline << ")");
  myTextOutline = outline;
 }
 
-void Target::Paint(void)
+void Draw::Paint(void)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint()");
  cairo_paint(myCairo);
 }
 
-void Target::Paint(float alpha)
+void Draw::Paint(float alpha)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint(" << alpha << ")");
  cairo_paint_with_alpha(myCairo, alpha);
 }
 
-void Target::Operator(PaCaLib::Oper op)
+void Draw::Operator(PaCaLib::Oper op)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Operator(" << (int)op << ")");
@@ -365,7 +369,7 @@ void Target::Operator(PaCaLib::Oper op)
  cairo_set_operator(myCairo, cairo_op);
 }
 
-PathPtr Target::NewPath(void)
+PathPtr Draw::NewPath(void)
 {
  return PathPtr(new Path(*this));
 }
@@ -376,7 +380,7 @@ PathPtr Target::NewPath(void)
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-Path::Path(Target & parent):
+Path::Path(Draw & parent):
     parent(parent)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
@@ -434,19 +438,14 @@ void Path::Stroke(void)
  cairo_stroke(parent.myCairo);
 }
 
-void Path::SetColour(float r, float g, float b)
-{
- parent.SetColour(r, g, b);
-}
-
 void Path::SetColour(float r, float g, float b, float a)
 {
  parent.SetColour(r, g, b, a);
 }
 
-void Path::SetColour(const PaCaLib::Colour & col)
+PaCaLib::DrawPtr Target::Draw(void)
 {
- parent.SetColour(col);
+ return PaCaLib::DrawPtr(new PaCaLinux::Draw(*this));
 }
 
 /* * * * * * * * * * * * * End - of - File * * * * * * * * * * * * * * */

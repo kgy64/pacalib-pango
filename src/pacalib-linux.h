@@ -91,29 +91,63 @@ namespace PaCaLinux
     }; // class Surface;
 
     typedef PaCaLib::PathPtr PathPtr;
+    typedef PaCaLib::DrawPtr DrawPtr;
 
-    class Path;
+    class Draw;
 
     class Target: public PaCaLib::Target
     {
-        friend class Path;
+        friend class PaCaLib::Target;
+        friend class PaCaLinux::Draw;
+
+        Target(int width, int height);
 
      public:
-        Target(int width, int height);
         virtual ~Target();
 
+        Surface & getSurface(void)
+        {
+            return mySurface;
+        }
+
+     protected:
         virtual int GetWidth(void) const override;
         virtual int GetHeight(void) const override;
         virtual const void * GetPixelData(void) const override;
         virtual int GetLogicalWidth(void) const override;
+        virtual DrawPtr Draw(void) override;
+
+        Surface mySurface;
+
+     private:
+        SYS_DEFINE_CLASS_NAME("PaCaLinux::Target");
+
+    }; // class Target
+
+    class Path;
+
+    class Draw: public PaCaLib::Draw
+    {
+        friend class PaCaLinux::Target;
+        friend class PaCaLinux::Path;
+
+     public:
+        virtual ~Draw();
+
+        inline cairo_t * getCairo(void)
+        {
+            return myCairo;
+        }
+
+     protected:
+        Draw(PaCaLinux::Target & target);
+
         virtual void Scale(float w, float h) override;
         virtual void SetLineWidth(float width) override;
         virtual void Move(float x, float y) override;
         virtual void Line(float x, float y) override;
         virtual void SetLineCap(PaCaLib::LineCap mode) override;
-        virtual void SetColour(float r, float g, float b) override;
         virtual void SetColour(float r, float g, float b, float a) override;
-        virtual void SetColour(const PaCaLib::Colour & col) override;
         virtual void Rectangle(float x, float y, float w, float h) override;
         virtual void Arc(float xc, float yc, float r, float a1, float a2) override;
         virtual float DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect = 1.0) override;
@@ -124,12 +158,7 @@ namespace PaCaLinux
         virtual void Operator(PaCaLib::Oper op) override;
         virtual PathPtr NewPath(void) override;
 
-     protected:
-        float myWidth;
-
-        float myHeight;
-
-        Surface mySurface;
+        PaCaLinux::Target & target;
 
         cairo_t * myCairo;
 
@@ -139,22 +168,26 @@ namespace PaCaLinux
 
         PaCaLib::Colour myTextOutlineColour;
 
+        float myWidth;
+
+        float myHeight;
+
      private:
-        SYS_DEFINE_CLASS_NAME("PaCaLinux::Target");
+        SYS_DEFINE_CLASS_NAME("PaCaLinux::Draw");
 
         static Threads::Mutex myTextMutex;
 
-    }; // class Target
+    }; // class PaCaLinux::Draw
 
     class Path: public PaCaLib::Path
     {
-        friend class Target;
+        friend class Draw;
 
      public:
         virtual ~Path();
 
      protected:
-        Path(Target & parent);
+        Path(Draw & parent);
 
         virtual void Move(float x, float y) override;
         virtual void Line(float x, float y) override;
@@ -165,14 +198,12 @@ namespace PaCaLinux
         virtual void SetLineCap(PaCaLib::LineCap mode) override;
         virtual void Fill(void) override;
         virtual void Stroke(void) override;
-        virtual void SetColour(float r, float g, float b) override;
         virtual void SetColour(float r, float g, float b, float a) override;
-        virtual void SetColour(const PaCaLib::Colour & col) override;
 
      private:
-        SYS_DEFINE_CLASS_NAME("PaCaAndroid::Path");
+        SYS_DEFINE_CLASS_NAME("PaCaLinux::Path");
 
-        Target & parent;
+        Draw & parent;
 
     }; // class PaCaLinux::Path
 
