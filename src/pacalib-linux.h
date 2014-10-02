@@ -144,17 +144,14 @@ namespace PaCaLinux
 
         virtual void Scale(float w, float h) override;
         virtual void SetLineWidth(float width) override;
-        virtual void Move(float x, float y) override;
-        virtual void Line(float x, float y) override;
         virtual void SetLineCap(PaCaLib::LineCap mode) override;
         virtual void SetColour(float r, float g, float b, float a) override;
-        virtual void Rectangle(float x, float y, float w, float h) override;
-        virtual void Arc(float xc, float yc, float r, float a1, float a2) override;
         virtual float DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect = 1.0) override;
         virtual void SetTextOutlineColour(float r, float g, float b, float a = 1.0) override;
         virtual void SetTextOutline(float outline) override;
         virtual void Paint(void) override;
         virtual void Paint(float alpha) override;
+        virtual void Fill(void) override;
         virtual void Operator(PaCaLib::Oper op) override;
         virtual PathPtr NewPath(void) override;
 
@@ -194,11 +191,7 @@ namespace PaCaLinux
         virtual void Arc(float xc, float yc, float r, float a1, float a2) override;
         virtual void Close(void) override;
         virtual void Clear(void) override;
-        virtual void SetLineWidth(float width) override;
-        virtual void SetLineCap(PaCaLib::LineCap mode) override;
-        virtual void Fill(void) override;
         virtual void Stroke(void) override;
-        virtual void SetColour(float r, float g, float b, float a) override;
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Path");

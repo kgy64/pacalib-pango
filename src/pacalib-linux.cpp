@@ -186,20 +186,6 @@ void Draw::SetLineWidth(float width)
  cairo_set_line_width(myCairo, width);
 }
 
-void Draw::Move(float x, float y)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Move(" << x << ", " << y << ")");
- cairo_move_to(myCairo, x, y);
-}
-
-void Draw::Line(float x, float y)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Line(" << x << ", " << y << ")");
- cairo_line_to(myCairo, x, y);
-}
-
 void Draw::SetLineCap(PaCaLib::LineCap mode)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
@@ -221,20 +207,6 @@ void Draw::SetColour(float r, float g, float b, float a)
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ", " << a << ")");
  cairo_set_source_rgba(myCairo, r, g, b, a);
-}
-
-void Draw::Rectangle(float x, float y, float w, float h)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Rectangle(" << x << ", " << y << ", " << w << ", " << h << ")");
- cairo_rectangle(myCairo, x, y, w, h);
-}
-
-void Draw::Arc(float xc, float yc, float r, float a1, float a2)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Arc(" << xc << ", " << yc << ", " << r << ", " << a1 << ", " << a2 << ")");
- cairo_arc(myCairo, xc, yc, r, a1, a2);
 }
 
 float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
@@ -295,7 +267,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
         x_pos -= text_width_half;
     break;
  }
- Move(x_pos, y_pos);
+ cairo_move_to(myCairo, x_pos, y_pos);
  SYS_DEBUG(DL_INFO1, "cairo_move_to() ok");
  pango_cairo_layout_path(myCairo, layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
@@ -347,6 +319,12 @@ void Draw::Paint(float alpha)
  cairo_paint_with_alpha(myCairo, alpha);
 }
 
+void Draw::Fill(void)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+ cairo_fill_preserve(myCairo);
+}
+
 void Draw::Operator(PaCaLib::Oper op)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
@@ -395,17 +373,17 @@ Path::~Path()
 
 void Path::Move(float x, float y)
 {
- parent.Move(x, y);
+ cairo_move_to(parent.getCairo(), x, y);
 }
 
 void Path::Line(float x, float y)
 {
- parent.Line(x, y);
+ cairo_line_to(parent.getCairo(), x, y);
 }
 
 void Path::Arc(float xc, float yc, float r, float a1, float a2)
 {
- parent.Arc(xc, yc, r, a1, a2);
+ cairo_arc(parent.getCairo(), xc, yc, r, a1, a2);
 }
 
 void Path::Close(void)
@@ -418,29 +396,9 @@ void Path::Clear(void)
  cairo_new_path(parent.myCairo);
 }
 
-void Path::SetLineWidth(float width)
-{
- parent.SetLineWidth(width);
-}
-
-void Path::SetLineCap(PaCaLib::LineCap mode)
-{
- parent.SetLineCap(mode);
-}
-
-void Path::Fill(void)
-{
- cairo_fill_preserve(parent.myCairo);
-}
-
 void Path::Stroke(void)
 {
  cairo_stroke(parent.myCairo);
-}
-
-void Path::SetColour(float r, float g, float b, float a)
-{
- parent.SetColour(r, g, b, a);
 }
 
 PaCaLib::DrawPtr Target::Draw(void)
