@@ -194,6 +194,9 @@ void Draw::SetLineCap(PaCaLib::LineCap mode)
  cairo_line_cap_t linecap;
 
  switch (mode) {
+    case PaCaLib::LINE_CAP_NONE:
+        linecap = CAIRO_LINE_CAP_BUTT;
+    break;
     case PaCaLib::LINE_CAP_ROUND:
         linecap = CAIRO_LINE_CAP_ROUND;
     break;
