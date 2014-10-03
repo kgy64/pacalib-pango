@@ -192,6 +192,7 @@ namespace PaCaLinux
         virtual void Close(void) override;
         virtual void Clear(void) override;
         virtual void Stroke(void) override;
+        virtual void Fill(void) override;
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Path");

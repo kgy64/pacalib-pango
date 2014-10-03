@@ -190,15 +190,21 @@ void Draw::SetLineCap(PaCaLib::LineCap mode)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetLineCap(" << (int)mode << ")");
+
  cairo_line_cap_t linecap;
+
  switch (mode) {
     case PaCaLib::LINE_CAP_ROUND:
         linecap = CAIRO_LINE_CAP_ROUND;
+    break;
+    case PaCaLib::LINE_CAP_SQUARE:
+        linecap = CAIRO_LINE_CAP_SQUARE;
     break;
     default:
         ASSERT(false, "Invalid LineCap: " << (int)mode);
     break;
  }
+
  cairo_set_line_cap(myCairo, linecap);
 }
 
@@ -399,6 +405,11 @@ void Path::Clear(void)
 void Path::Stroke(void)
 {
  cairo_stroke(parent.myCairo);
+}
+
+void Path::Fill(void)
+{
+ cairo_fill(parent.myCairo);
 }
 
 PaCaLib::DrawPtr Target::Draw(void)
