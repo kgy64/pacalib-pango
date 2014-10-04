@@ -139,8 +139,6 @@ const void * Target::GetPixelData(void) const
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-Threads::Mutex Draw::myTextMutex;
-
 Draw::Draw(PaCaLinux::Target & target):
     target(target),
     myCairo(cairo_create(target.getSurface().get())),
@@ -223,14 +221,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
 
- // I don't know why, the text rendering is not thread-safe. At least, locking this function resolves some
- // very strange error messages or even crashes.
- // TODO: Find a better way!
- Threads::Lock _l(myTextMutex);
-
  CairoSave _s(myCairo);
-
- SYS_DEBUG(DL_INFO1, "saved " << myCairo);
 
  float h = 0.70;
  float v = 0.70; // Heuristic values :-)

@@ -172,8 +172,6 @@ namespace PaCaLinux
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Draw");
 
-        static Threads::Mutex myTextMutex;
-
     }; // class PaCaLinux::Draw
 
     class Path: public PaCaLib::Path
