@@ -139,6 +139,8 @@ const void * Target::GetPixelData(void) const
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+Threads::Mutex Draw::myTextMutex;
+
 Draw::Draw(PaCaLinux::Target & target):
     target(target),
     myCairo(cairo_create(target.getSurface().get())),
@@ -220,6 +222,11 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
+
+ // I don't know why, the text rendering is not thread-safe. At least, locking this function resolves some
+ // very strange error messages or even crashes.
+ // TODO: Find a better way!
+ Threads::Lock _l(myTextMutex);
 
  CairoSave _s(myCairo);
 
@@ -309,42 +316,8 @@ void Draw::Paint(void)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint()");
+ cairo_set_operator(myCairo, CAIRO_OPERATOR_SOURCE);
  cairo_paint(myCairo);
-}
-
-void Draw::Paint(float alpha)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Paint(" << alpha << ")");
- cairo_paint_with_alpha(myCairo, alpha);
-}
-
-void Draw::Fill(void)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- cairo_fill_preserve(myCairo);
-}
-
-void Draw::Operator(PaCaLib::Oper op)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "Operator(" << (int)op << ")");
-
- cairo_operator_t cairo_op;
-
- switch (op) {
-    case PaCaLib::OP_SOURCE:
-        cairo_op = CAIRO_OPERATOR_SOURCE;
-    break;
-    case PaCaLib::OP_OVER:
-        cairo_op = CAIRO_OPERATOR_DEST_OVER;
-    break;
-    default:
-        ASSERT(false, "Invalid operator: " << (int)op);
-    break;
- }
-
- cairo_set_operator(myCairo, cairo_op);
 }
 
 PathPtr Draw::NewPath(void)
@@ -369,6 +342,8 @@ Path::Path(Draw & parent):
 Path::~Path()
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ Clear();
 }
 
 void Path::Move(float x, float y)
@@ -398,12 +373,14 @@ void Path::Clear(void)
 
 void Path::Stroke(void)
 {
+ cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_DEST_OVER);
  cairo_stroke(parent.myCairo);
 }
 
 void Path::Fill(void)
 {
- cairo_fill(parent.myCairo);
+ cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_DEST_OVER);
+ cairo_fill_preserve(parent.myCairo);
 }
 
 PaCaLib::DrawPtr Target::Draw(void)

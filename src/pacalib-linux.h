@@ -150,9 +150,6 @@ namespace PaCaLinux
         virtual void SetTextOutlineColour(float r, float g, float b, float a = 1.0) override;
         virtual void SetTextOutline(float outline) override;
         virtual void Paint(void) override;
-        virtual void Paint(float alpha) override;
-        virtual void Fill(void) override;
-        virtual void Operator(PaCaLib::Oper op) override;
         virtual PathPtr NewPath(void) override;
 
         PaCaLinux::Target & target;
@@ -171,6 +168,8 @@ namespace PaCaLinux
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Draw");
+
+        static Threads::Mutex myTextMutex;
 
     }; // class PaCaLinux::Draw
 
