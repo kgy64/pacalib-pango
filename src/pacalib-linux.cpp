@@ -230,8 +230,8 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
 
  CairoSave _s(myCairo);
 
- float h = 0.70;
- float v = 0.70; // Heuristic values :-)
+ float h = 0.75;
+ float v = 0.75; // Heuristic values :-)
 
  h *= size * aspect;
  v *= size;
@@ -279,12 +279,12 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  pango_cairo_layout_path(myCairo, layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
 
- if (myTextOutline > 0.0) {
-    SetLineWidth(text_height_half * myTextOutline);
-    cairo_stroke(myCairo);
- } else if (myTextOutline < 0.0) {
-    cairo_fill_preserve(myCairo);
+ if (myTextOutline < 0.0) {
     SetLineWidth(-text_height_half * myTextOutline);
+    cairo_stroke(myCairo);
+ } else if (myTextOutline > 0.0) {
+    cairo_fill_preserve(myCairo);
+    SetLineWidth(text_height_half * myTextOutline);
     PaCaLib::Draw::SetColour(myTextOutlineColour);
     cairo_stroke(myCairo);
  } else {
