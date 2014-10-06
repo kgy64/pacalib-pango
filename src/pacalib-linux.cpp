@@ -373,13 +373,13 @@ void Path::Clear(void)
 
 void Path::Stroke(void)
 {
- cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_DEST_OVER);
+ cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_OVER);
  cairo_stroke(parent.myCairo);
 }
 
 void Path::Fill(void)
 {
- cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_DEST_OVER);
+ cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_OVER);
  cairo_fill_preserve(parent.myCairo);
 }
 
