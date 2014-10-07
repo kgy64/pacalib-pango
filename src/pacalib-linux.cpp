@@ -20,11 +20,11 @@ using namespace PaCaLinux;
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-PaCaLinux::Surface::Surface(int width, int height):
-    mySurface(cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height))
+PaCaLinux::Surface::Surface(int width, int height, Glesly::PixelFormat format):
+    mySurface(cairo_image_surface_create(PaCaLinux::ConvertCairoPixelFormat(format), width, height))
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
- ASSERT(cairo_surface_status(mySurface) == CAIRO_STATUS_SUCCESS, "Cairo: creating surface failed with " << GetErrorMessage(cairo_surface_status(mySurface)));
+ ASSERT(cairo_surface_status(mySurface) == CAIRO_STATUS_SUCCESS, "creating Cairo Surface failed with " << GetErrorMessage(cairo_surface_status(mySurface)));
  SYS_DEBUG(DL_INFO1, "Created surface: " << getWidth() << "x" << getHeight() << " at " << mySurface);
 }
 
@@ -35,7 +35,7 @@ PaCaLinux::Surface::~Surface()
  SYS_DEBUG(DL_INFO1, "Deleted surface: " << getWidth() << "x" << getHeight());
 }
 
-const char * PaCaLinux::Surface::GetErrorMessage(cairo_status_t status)
+const char * PaCaLinux::GetErrorMessage(cairo_status_t status)
 {
  ASSERT(status > 0 && status < CAIRO_STATUS_LAST_STATUS, "Cairo: status overflow (" << (int)status << ")");
 
@@ -90,16 +90,15 @@ const char * PaCaLinux::Surface::GetErrorMessage(cairo_status_t status)
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height)
+PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height, Glesly::PixelFormat format)
 {
- return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height));
+ return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height, format));
 }
 
-PaCaLinux::Target::Target(int width, int height):
-    mySurface(width, height)
+PaCaLinux::Target::Target(int width, int height, Glesly::PixelFormat format):
+    mySurface(width, height, format)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
-
 }
 
 PaCaLinux::Target::~Target()
@@ -150,6 +149,8 @@ Draw::Draw(PaCaLinux::Target & target):
     myHeight(target.GetHeight())
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ ASSERT(cairo_status(myCairo) == CAIRO_STATUS_SUCCESS, "creating Cairo failed with " << GetErrorMessage(cairo_status(myCairo)));
 
  myFontDescription = pango_font_description_new();
  pango_font_description_set_family(myFontDescription, "serif");
@@ -278,6 +279,8 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  SYS_DEBUG(DL_INFO1, "cairo_move_to() ok");
  pango_cairo_layout_path(myCairo, layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
+
+ cairo_set_operator(myCairo, CAIRO_OPERATOR_ADD);
 
  if (myTextOutline < 0.0) {
     SetLineWidth(-text_height_half * myTextOutline);

@@ -12,14 +12,34 @@
 #define __SRC_PACALIB_LINUX_H_INCLUDED__
 
 #include <Threads/Mutex.h>
+#include <glesly/format.h>
 #include <pacalib/pacalib.h>
 #include <Debug/Debug.h>
 
 #include <pango/pangocairo.h>
-#include <boost/shared_ptr.hpp>
 
 namespace PaCaLinux
 {
+    inline cairo_format_t ConvertCairoPixelFormat(Glesly::PixelFormat format)
+    {
+        switch (format) {
+            case Glesly::FORMAT_RGB_565:
+                return CAIRO_FORMAT_RGB16_565;
+            break;
+            case Glesly::FORMAT_RGB_888:
+                return CAIRO_FORMAT_RGB24;
+            break;
+            case Glesly::FORMAT_RGBA_8888:
+                return CAIRO_FORMAT_ARGB32;
+            break;
+            default:
+            break;
+        }
+        return CAIRO_FORMAT_INVALID;
+    }
+
+    const char * GetErrorMessage(cairo_status_t status);
+
     class CairoSave
     {
      public:
@@ -42,7 +62,7 @@ namespace PaCaLinux
     class Surface
     {
      public:
-        Surface(int width, int height);
+        Surface(int width, int height, Glesly::PixelFormat format);
         VIRTUAL_IF_DEBUG ~Surface();
 
         inline cairo_surface_t * get(void)
@@ -83,8 +103,6 @@ namespace PaCaLinux
      protected:
         cairo_surface_t * mySurface;
 
-        static const char * GetErrorMessage(cairo_status_t status);
-
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Surface");
 
@@ -100,7 +118,7 @@ namespace PaCaLinux
         friend class PaCaLib::Target;
         friend class PaCaLinux::Draw;
 
-        Target(int width, int height);
+        Target(int width, int height, Glesly::PixelFormat format);
 
      public:
         virtual ~Target();
