@@ -92,7 +92,9 @@ namespace PaCaLinux
 
         inline int getPhysicalWidth(void) const
         {
-            return cairo_image_surface_get_stride(const_cast<cairo_surface_t*>(get())) / 4; // Note: always using 32-bit pixels
+            cairo_surface_t * surface = const_cast<cairo_surface_t*>(get());
+            cairo_format_t format = cairo_image_surface_get_format(surface);
+            return cairo_image_surface_get_stride(surface) / (format == CAIRO_FORMAT_RGB16_565 ? 2 : 4); // Note: using only 2 or 4 byte sizes
         }
 
         inline int getHeight(void) const
