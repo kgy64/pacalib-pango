@@ -26,9 +26,6 @@ namespace PaCaLinux
             case Glesly::FORMAT_RGB_565:
                 return CAIRO_FORMAT_RGB16_565;
             break;
-            case Glesly::FORMAT_RGB_888:
-                return CAIRO_FORMAT_RGB24;
-            break;
             case Glesly::FORMAT_RGBA_8888:
                 return CAIRO_FORMAT_ARGB32;
             break;
