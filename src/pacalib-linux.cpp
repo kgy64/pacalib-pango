@@ -111,6 +111,10 @@ const char * PaCaLinux::GetErrorMessage(cairo_status_t status)
 
 PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height, Glesly::PixelFormat format)
 {
+ if (format == Glesly::FORMAT_DEFAULT) {
+    format = Glesly::FORMAT_RGBA_8888;
+ }
+
  return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height, format));
 }
 
