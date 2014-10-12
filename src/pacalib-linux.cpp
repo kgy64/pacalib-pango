@@ -20,17 +20,36 @@ using namespace PaCaLinux;
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-PaCaLinux::Surface::Surface(int width, int height, Glesly::PixelFormat format):
-    mySurface(cairo_image_surface_create(PaCaLinux::ConvertCairoPixelFormat(format), width, height))
+Surface::Surface(int width, int height, Glesly::PixelFormat format):
+    myPixelFormat(format),
+    mySurface(cairo_image_surface_create(GetCairoPixelFormat(), width, height))
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
+
  ASSERT(cairo_surface_status(mySurface) == CAIRO_STATUS_SUCCESS, "creating Cairo Surface failed with " << GetErrorMessage(cairo_surface_status(mySurface)));
  SYS_DEBUG(DL_INFO1, "Created surface: " << getWidth() << "x" << getHeight() << " at " << mySurface);
 }
 
-PaCaLinux::Surface::~Surface()
+Surface::Surface(const Glesly::Target2D & source):
+    myPixelFormat(source.GetPixelFormat()),
+    mySurface(nullptr)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ cairo_format_t format = GetCairoPixelFormat(myPixelFormat);
+ ASSERT(format != CAIRO_FORMAT_INVALID, "trying to copy from source with unknown pixel format");
+
+ int stride = cairo_format_stride_for_width(format, source.GetWidth());
+ unsigned char * pixeldata = reinterpret_cast<unsigned char *>(const_cast<void *>(source.GetPixelData()));
+ mySurface = cairo_image_surface_create_for_data(pixeldata, format, source.GetWidth(), source.GetHeight(), stride);
+
+ ASSERT(cairo_surface_status(mySurface) == CAIRO_STATUS_SUCCESS, "could not create cairo surface");
+}
+
+Surface::~Surface()
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_surface_destroy(mySurface);
  SYS_DEBUG(DL_INFO1, "Deleted surface: " << getWidth() << "x" << getHeight());
 }
@@ -95,41 +114,59 @@ PaCaLib::TargetPtr PaCaLib::Target::Create(int width, int height, Glesly::PixelF
  return PaCaLib::TargetPtr(new PaCaLinux::Target(width, height, format));
 }
 
-PaCaLinux::Target::Target(int width, int height, Glesly::PixelFormat format):
+Target::Target(int width, int height, Glesly::PixelFormat format):
     mySurface(width, height, format)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
 }
 
-PaCaLinux::Target::~Target()
+Target::~Target()
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
 
  SYS_DEBUG(DL_INFO1, "Deleted target (" << myWidth << "x" << myHeight << ")");
 }
 
-int Target::GetHeight(void) const
+Glesly::Target2D & Target::operator=(const Glesly::Target2D & other)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ cairo_t * cairo = cairo_create(getSurface().get());
+ cairo_set_source_surface(cairo, Surface(other).get(), 0.0, 0.0);
+ cairo_paint(cairo);
+ cairo_destroy(cairo);
+
+ return *this;
+}
+
+int Target::GetHeight(void) const
+{
  return mySurface.getHeight();
 }
 
 int Target::GetWidth(void) const
 {
- SYS_DEBUG_MEMBER(DM_PACALIB);
  return mySurface.getPhysicalWidth();
 }
 
 int Target::GetLogicalWidth(void) const
 {
- SYS_DEBUG_MEMBER(DM_PACALIB);
  return mySurface.getWidth();
 }
 
 const void * Target::GetPixelData(void) const
 {
- SYS_DEBUG_MEMBER(DM_PACALIB);
  return mySurface.getData();
+}
+
+Glesly::PixelFormat Target::GetPixelFormat(void) const
+{
+ return mySurface.GetPixelFormat();
+}
+
+PaCaLib::DrawPtr Target::Draw(void)
+{
+ return PaCaLib::DrawPtr(new PaCaLinux::Draw(*this));
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
@@ -150,7 +187,7 @@ Draw::Draw(PaCaLinux::Target & target):
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
 
- ASSERT(cairo_status(myCairo) == CAIRO_STATUS_SUCCESS, "creating Cairo failed with " << GetErrorMessage(cairo_status(myCairo)));
+ ASSERT(cairo_status(getCairo()) == CAIRO_STATUS_SUCCESS, "creating Cairo failed with " << GetErrorMessage(cairo_status(getCairo())));
 
  myFontDescription = pango_font_description_new();
  pango_font_description_set_family(myFontDescription, "serif");
@@ -159,10 +196,10 @@ Draw::Draw(PaCaLinux::Target & target):
  pango_font_description_set_absolute_size(myFontDescription, 2*PANGO_SCALE);
 
  // To be compatible with the OpenGL backend, set the coordinate ranges to -1.0 ... +1.0:
- cairo_translate(myCairo, myWidth/2, myHeight/2);
- cairo_scale(myCairo, myWidth/2, -myHeight/2);
+ cairo_translate(getCairo(), myWidth/2, myHeight/2);
+ cairo_scale(getCairo(), myWidth/2, -myHeight/2);
 
- SYS_DEBUG(DL_INFO1, "myCairo at " << myCairo << ", font at " << myFontDescription << ", size=" << myWidth << "x" << myHeight);
+ SYS_DEBUG(DL_INFO1, "myCairo at " << getCairo() << ", font at " << myFontDescription << ", size=" << myWidth << "x" << myHeight);
 }
 
 Draw::~Draw()
@@ -170,21 +207,21 @@ Draw::~Draw()
  SYS_DEBUG_MEMBER(DM_PACALIB);
 
  pango_font_description_free(myFontDescription);
- cairo_destroy(myCairo);
+ cairo_destroy(getCairo());
 }
 
 void Draw::Scale(float w, float h)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Scale(" << w << ", " << h << ")");
- cairo_scale(myCairo, w, h);
+ cairo_scale(getCairo(), w, h);
 }
 
 void Draw::SetLineWidth(float width)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetLineWidth(" << width << ")");
- cairo_set_line_width(myCairo, width);
+ cairo_set_line_width(getCairo(), width);
 }
 
 void Draw::SetLineCap(PaCaLib::LineCap mode)
@@ -209,14 +246,14 @@ void Draw::SetLineCap(PaCaLib::LineCap mode)
     break;
  }
 
- cairo_set_line_cap(myCairo, linecap);
+ cairo_set_line_cap(getCairo(), linecap);
 }
 
 void Draw::SetColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ", " << a << ")");
- cairo_set_source_rgba(myCairo, r, g, b, a);
+ cairo_set_source_rgba(getCairo(), r, g, b, a);
 }
 
 float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
@@ -229,7 +266,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  // TODO: Find a better way!
  Threads::Lock _l(myTextMutex);
 
- CairoSave _s(myCairo);
+ CairoSave _s(getCairo());
 
  float h = 0.75;
  float v = 0.75; // Heuristic values :-)
@@ -240,7 +277,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  Scale(h, v);
  SYS_DEBUG(DL_INFO1, "cairo_scale(" << h << ", " << v << ") ok");
 
- PangoLayout *layout = pango_cairo_create_layout(myCairo);
+ PangoLayout *layout = pango_cairo_create_layout(getCairo());
  ASSERT(layout, "pango_cairo_create_layout() failed");
 
  SYS_DEBUG(DL_INFO1, "layout=" << layout);
@@ -253,7 +290,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  NewPath();
  SYS_DEBUG(DL_INFO1, "cairo_new_path() ok");
 
- pango_cairo_update_layout(myCairo, layout);
+ pango_cairo_update_layout(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_update_layout() ok");
  int width, height;
  pango_layout_get_size(layout, &width, &height);
@@ -275,23 +312,23 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
         x_pos -= text_width_half;
     break;
  }
- cairo_move_to(myCairo, x_pos, y_pos);
+ cairo_move_to(getCairo(), x_pos, y_pos);
  SYS_DEBUG(DL_INFO1, "cairo_move_to() ok");
- pango_cairo_layout_path(myCairo, layout);
+ pango_cairo_layout_path(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
 
- cairo_set_operator(myCairo, CAIRO_OPERATOR_ADD);
+ cairo_set_operator(getCairo(), CAIRO_OPERATOR_ADD);
 
  if (myTextOutline < 0.0) {
     SetLineWidth(-text_height_half * myTextOutline);
-    cairo_stroke(myCairo);
+    cairo_stroke(getCairo());
  } else if (myTextOutline > 0.0) {
-    cairo_fill_preserve(myCairo);
+    cairo_fill_preserve(getCairo());
     SetLineWidth(text_height_half * myTextOutline);
     PaCaLib::Draw::SetColour(myTextOutlineColour);
-    cairo_stroke(myCairo);
+    cairo_stroke(getCairo());
  } else {
-    cairo_fill(myCairo);
+    cairo_fill(getCairo());
  }
  SYS_DEBUG(DL_INFO1, "draw ok");
 
@@ -319,8 +356,8 @@ void Draw::Paint(void)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint()");
- cairo_set_operator(myCairo, CAIRO_OPERATOR_SOURCE);
- cairo_paint(myCairo);
+ cairo_set_operator(getCairo(), CAIRO_OPERATOR_SOURCE);
+ cairo_paint(getCairo());
 }
 
 PathPtr Draw::NewPath(void)
@@ -366,29 +403,24 @@ void Path::Arc(float xc, float yc, float r, float a1, float a2)
 
 void Path::Close(void)
 {
- cairo_close_path(parent.myCairo);
+ cairo_close_path(parent.getCairo());
 }
 
 void Path::Clear(void)
 {
- cairo_new_path(parent.myCairo);
+ cairo_new_path(parent.getCairo());
 }
 
 void Path::Stroke(void)
 {
- cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_OVER);
- cairo_stroke(parent.myCairo);
+ cairo_set_operator(parent.getCairo(), CAIRO_OPERATOR_ADD);
+ cairo_stroke_preserve(parent.getCairo());
 }
 
 void Path::Fill(void)
 {
- cairo_set_operator(parent.myCairo, CAIRO_OPERATOR_OVER);
- cairo_fill_preserve(parent.myCairo);
-}
-
-PaCaLib::DrawPtr Target::Draw(void)
-{
- return PaCaLib::DrawPtr(new PaCaLinux::Draw(*this));
+ cairo_set_operator(parent.getCairo(), CAIRO_OPERATOR_ADD);
+ cairo_fill_preserve(parent.getCairo());
 }
 
 /* * * * * * * * * * * * * End - of - File * * * * * * * * * * * * * * */

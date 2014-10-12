@@ -20,21 +20,6 @@
 
 namespace PaCaLinux
 {
-    inline cairo_format_t ConvertCairoPixelFormat(Glesly::PixelFormat format)
-    {
-        switch (format) {
-            case Glesly::FORMAT_RGB_565:
-                return CAIRO_FORMAT_RGB16_565;
-            break;
-            case Glesly::FORMAT_RGBA_8888:
-                return CAIRO_FORMAT_ARGB32;
-            break;
-            default:
-            break;
-        }
-        return CAIRO_FORMAT_INVALID;
-    }
-
     const char * GetErrorMessage(cairo_status_t status);
 
     class CairoSave
@@ -60,7 +45,10 @@ namespace PaCaLinux
     {
      public:
         Surface(int width, int height, Glesly::PixelFormat format);
+        Surface(const Glesly::Target2D & source);
         VIRTUAL_IF_DEBUG ~Surface();
+
+        void CopyFrom(const Glesly::Target2D & other);
 
         inline cairo_surface_t * get(void)
         {
@@ -99,13 +87,41 @@ namespace PaCaLinux
             return cairo_image_surface_get_height(const_cast<cairo_surface_t*>(get()));
         }
 
+        inline Glesly::PixelFormat GetPixelFormat(void) const
+        {
+            return myPixelFormat;
+        }
+
+        inline static cairo_format_t GetCairoPixelFormat(Glesly::PixelFormat format)
+        {
+            switch (format) {
+                case Glesly::FORMAT_RGB_565:
+                    return CAIRO_FORMAT_RGB16_565;
+                break;
+                case Glesly::FORMAT_RGBA_8888:
+                    return CAIRO_FORMAT_ARGB32;
+                break;
+                default:
+                    DEBUG_OUT("Having unknown (unused) pixel format " << (int)format);
+                break;
+            }
+            return CAIRO_FORMAT_INVALID;
+        }
+
      protected:
+        Glesly::PixelFormat myPixelFormat;
+
         cairo_surface_t * mySurface;
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Surface");
 
-    }; // class Surface;
+        inline cairo_format_t GetCairoPixelFormat(void) const
+        {
+            return GetCairoPixelFormat(myPixelFormat);
+        }
+
+    }; // class PaCaLinux::Surface
 
     typedef PaCaLib::PathPtr PathPtr;
     typedef PaCaLib::DrawPtr DrawPtr;
@@ -128,9 +144,12 @@ namespace PaCaLinux
         }
 
      protected:
+        virtual Glesly::Target2D & operator=(const Glesly::Target2D & other) override;
+
         virtual int GetWidth(void) const override;
         virtual int GetHeight(void) const override;
         virtual const void * GetPixelData(void) const override;
+        virtual Glesly::PixelFormat GetPixelFormat(void) const override;
         virtual int GetLogicalWidth(void) const override;
         virtual DrawPtr Draw(void) override;
 
@@ -139,7 +158,7 @@ namespace PaCaLinux
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Target");
 
-    }; // class Target
+    }; // class PaCaLinux::Target
 
     class Path;
 
@@ -158,6 +177,8 @@ namespace PaCaLinux
 
      protected:
         Draw(PaCaLinux::Target & target);
+
+        void CopyFrom(const Surface & source);
 
         virtual void Scale(float w, float h) override;
         virtual void SetLineWidth(float width) override;
