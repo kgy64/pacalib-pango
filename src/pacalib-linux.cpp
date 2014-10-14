@@ -405,7 +405,10 @@ PathPtr Draw::NewPath(void)
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 Path::Path(Draw & parent):
-    parent(parent)
+    parent(parent),
+    is_bezier(false),
+    bezier_dx(0.0f),
+    bezier_dy(0.0f)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
 
@@ -434,6 +437,24 @@ void Path::Arc(float xc, float yc, float r, float a1, float a2)
  cairo_arc(parent.getCairo(), xc, yc, r, a1, a2);
 }
 
+void Path::Bezier(float x, float y, float dx, float dy)
+{
+ if (is_bezier) {
+    double px, py;
+    cairo_get_current_point(parent.getCairo(), &px, &py);
+    px += bezier_dx;
+    py += bezier_dy;
+    bezier_dx = dx;
+    bezier_dy = dy;
+    cairo_curve_to(parent.getCairo(), px, py, x - dx, y - dy, x, y);
+ } else {
+    cairo_move_to(parent.getCairo(), x, y);
+    bezier_dx = dx;
+    bezier_dy = dy;
+    is_bezier = true;
+ }
+}
+
 void Path::Close(void)
 {
  cairo_close_path(parent.getCairo());
@@ -442,6 +463,7 @@ void Path::Close(void)
 void Path::Clear(void)
 {
  cairo_new_path(parent.getCairo());
+ is_bezier = false;
 }
 
 void Path::Stroke(void)
