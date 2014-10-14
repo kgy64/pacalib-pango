@@ -203,6 +203,8 @@ Draw::Draw(PaCaLinux::Target & target):
  cairo_translate(getCairo(), myWidth/2, myHeight/2);
  cairo_scale(getCairo(), myWidth/2, -myHeight/2);
 
+ static_cast<PaCaLib::Draw &>(*this).SetColourCompose();
+
  SYS_DEBUG(DL_INFO1, "myCairo at " << getCairo() << ", font at " << myFontDescription << ", size=" << myWidth << "x" << myHeight);
 }
 
@@ -257,7 +259,36 @@ void Draw::SetColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "SetColour(" << r << ", " << g << ", " << b << ", " << a << ")");
+
  cairo_set_source_rgba(getCairo(), r, g, b, a);
+}
+
+void Draw::SetColourCompose(PaCaLib::ColourCompose mode)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+ SYS_DEBUG(DL_INFO1, "SetColourCompose(" << mode << ")");
+
+ cairo_operator_t op = CAIRO_OPERATOR_SOURCE;
+
+ switch (mode) {
+    case PaCaLib::COLOUR_COMPOSE_DEFAULT:
+        // nothing to do
+    break;
+    case PaCaLib::COLOUR_COMPOSE_ADD:
+        op = CAIRO_OPERATOR_ADD;
+    break;
+    case PaCaLib::COLOUR_COMPOSE_SUBTRACT:
+        op = CAIRO_OPERATOR_OVER;
+    break;
+    case PaCaLib::COLOUR_COMPOSE_OVERWRITE:
+        op = CAIRO_OPERATOR_SOURCE;
+    break;
+    default:
+        ASSERT(false, "using " << mode << " is not supported");
+    break;
+ }
+
+ cairo_set_operator(getCairo(), op);
 }
 
 float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
@@ -321,8 +352,6 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  pango_cairo_layout_path(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
 
- cairo_set_operator(getCairo(), CAIRO_OPERATOR_ADD);
-
  if (myTextOutline < 0.0) {
     SetLineWidth(-text_height_half * myTextOutline);
     cairo_stroke(getCairo());
@@ -360,7 +389,7 @@ void Draw::Paint(void)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "Paint()");
- cairo_set_operator(getCairo(), CAIRO_OPERATOR_SOURCE);
+
  cairo_paint(getCairo());
 }
 
@@ -417,13 +446,11 @@ void Path::Clear(void)
 
 void Path::Stroke(void)
 {
- cairo_set_operator(parent.getCairo(), CAIRO_OPERATOR_ADD);
  cairo_stroke_preserve(parent.getCairo());
 }
 
 void Path::Fill(void)
 {
- cairo_set_operator(parent.getCairo(), CAIRO_OPERATOR_ADD);
  cairo_fill_preserve(parent.getCairo());
 }
 
