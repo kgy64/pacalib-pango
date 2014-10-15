@@ -444,15 +444,14 @@ void Path::Bezier(float x, float y, float dx, float dy)
     cairo_get_current_point(parent.getCairo(), &px, &py);
     px += bezier_dx;
     py += bezier_dy;
-    bezier_dx = dx;
-    bezier_dy = dy;
     cairo_curve_to(parent.getCairo(), px, py, x - dx, y - dy, x, y);
  } else {
     cairo_move_to(parent.getCairo(), x, y);
-    bezier_dx = dx;
-    bezier_dy = dy;
     is_bezier = true;
  }
+
+ bezier_dx = dx;
+ bezier_dy = dy;
 }
 
 void Path::Close(void)
