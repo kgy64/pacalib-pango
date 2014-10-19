@@ -127,8 +127,6 @@ Target::Target(int width, int height, Glesly::PixelFormat format):
 Target::~Target()
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
-
- SYS_DEBUG(DL_INFO1, "Deleted target (" << myWidth << "x" << myHeight << ")");
 }
 
 Glesly::Target2D & Target::operator=(const Glesly::Target2D & other)
@@ -291,10 +289,10 @@ void Draw::SetColourCompose(PaCaLib::ColourCompose mode)
  cairo_set_operator(getCairo(), op);
 }
 
-float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect)
+float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "DrawText(" << x << ", " << y << ", " << (int)mode << ", '" << text << "', " << size << ", " << aspect << ")");
+ SYS_DEBUG(DL_INFO1, "DrawTextInternal(x=" << x << ", y=" << y << ", mode=" << (int)mode << ", text='" << text << "', size=" << size << ", offset=" << offset << ", aspect=" << aspect << ", rot=" << rotation << ")");
 
  // I don't know why, the text rendering is not thread-safe. At least, locking this function resolves some
  // very strange error messages or even crashes.
@@ -312,6 +310,11 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  Scale(h, v);
  SYS_DEBUG(DL_INFO1, "cairo_scale(" << h << ", " << v << ") ok");
 
+ x /= h;
+ y /= v;
+
+ // x:y is now the reference point of the text on the target
+
  PangoLayout *layout = pango_cairo_create_layout(getCairo());
  ASSERT(layout, "pango_cairo_create_layout() failed");
 
@@ -322,7 +325,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  pango_layout_set_font_description(layout, myFontDescription);
  SYS_DEBUG(DL_INFO1, "pango_layout_set_font_description() ok");
 
- NewPath();
+ cairo_new_path(getCairo());
  SYS_DEBUG(DL_INFO1, "cairo_new_path() ok");
 
  pango_cairo_update_layout(getCairo(), layout);
@@ -333,22 +336,34 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  float text_width_half = (float)width / (2*PANGO_SCALE);
  float text_height_half = (float)height / (2*PANGO_SCALE);
 
- float x_pos = x/h - text_width_half;
- float y_pos = y/v - text_height_half - (float)height * offset / PANGO_SCALE;
+ y -= text_height_half;
+
+ float xc = -text_width_half;
+ float yc = (float)height * offset / (float)(-PANGO_SCALE);
 
  switch (mode) {
     case PaCaLib::LEFT:
-        x_pos += text_width_half;
+        xc = 0.0f;
     break;
     case PaCaLib::CENTER:
-        // Nothing to do
+        // Nothing to do here
     break;
     case PaCaLib::RIGHT:
-        x_pos -= text_width_half;
+        xc -= text_width_half;
     break;
  }
- cairo_move_to(getCairo(), x_pos, y_pos);
- SYS_DEBUG(DL_INFO1, "cairo_move_to() ok");
+
+ cairo_translate(getCairo(), x, y);
+ SYS_DEBUG(DL_INFO1, "cairo_translate(" << x << ", " << y << ") ok");
+
+ if (rotation != 0.0f) {
+    SYS_DEBUG(DL_INFO1, "KGY: rotation by " << rotation);
+    cairo_rotate(getCairo(), rotation);
+ }
+
+ cairo_move_to(getCairo(), xc, yc);
+ SYS_DEBUG(DL_INFO1, "cairo_move_to(" << xc << ", " << yc << ")");
+
  pango_cairo_layout_path(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
 

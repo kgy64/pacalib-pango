@@ -185,7 +185,7 @@ namespace PaCaLinux
         virtual void SetLineCap(PaCaLib::LineCap mode) override;
         virtual void SetColour(float r, float g, float b, float a) override;
         virtual void SetColourCompose(PaCaLib::ColourCompose mode) override;
-        virtual float DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect = 1.0) override;
+        virtual float DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation) override;
         virtual void SetTextOutlineColour(float r, float g, float b, float a = 1.0) override;
         virtual void SetTextOutline(float outline) override;
         virtual void Paint(void) override;
