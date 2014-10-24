@@ -289,7 +289,7 @@ void Draw::SetColourCompose(PaCaLib::ColourCompose mode)
  cairo_set_operator(getCairo(), op);
 }
 
-float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation)
+float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation, float shear_x, float shear_y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
  SYS_DEBUG(DL_INFO1, "DrawTextInternal(x=" << x << ", y=" << y << ", mode=" << (int)mode << ", text='" << text << "', size=" << size << ", offset=" << offset << ", aspect=" << aspect << ", rot=" << rotation << ")");
@@ -304,10 +304,10 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  float h = 0.75;
  float v = 0.75; // Heuristic values :-)
 
- h *= size * aspect;
+ h *= size;
  v *= size;
 
- Scale(h, v);
+ cairo_scale(getCairo(), h, v);
  SYS_DEBUG(DL_INFO1, "cairo_scale(" << h << ", " << v << ") ok");
 
  x /= h;
@@ -332,11 +332,10 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  SYS_DEBUG(DL_INFO1, "pango_cairo_update_layout() ok");
  int width, height;
  pango_layout_get_size(layout, &width, &height);
+ width *= aspect;
  SYS_DEBUG(DL_INFO1, "pango_layout_get_size(): w=" << width << ", h=" << height);
  float text_width_half = (float)width / (2*PANGO_SCALE);
  float text_height_half = (float)height / (2*PANGO_SCALE);
-
- y -= text_height_half;
 
  float xc = -text_width_half;
  float yc = (float)height * offset / (float)(-PANGO_SCALE);
@@ -357,12 +356,34 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  SYS_DEBUG(DL_INFO1, "cairo_translate(" << x << ", " << y << ") ok");
 
  if (rotation != 0.0f) {
-    SYS_DEBUG(DL_INFO1, "KGY: rotation by " << rotation);
+    SYS_DEBUG(DL_INFO1, "rotation by " << rotation);
     cairo_rotate(getCairo(), rotation);
  }
 
+ if (shear_x != 0.0f) {
+    cairo_matrix_t m = {
+        1.0,        0.0,
+        -shear_x,   1.0,
+        0.0,        0.0
+    };
+    cairo_transform(getCairo(), &m);
+ }
+
+ if (shear_y != 0.0f) {
+    cairo_matrix_t m = {
+        1.0,        -shear_y,
+        0.0,        1.0,
+        0.0,        0.0
+    };
+    cairo_transform(getCairo(), &m);
+ }
+
+ yc -= text_height_half;
+
  cairo_move_to(getCairo(), xc, yc);
  SYS_DEBUG(DL_INFO1, "cairo_move_to(" << xc << ", " << yc << ")");
+
+ cairo_scale(getCairo(), aspect, 1.0);
 
  pango_cairo_layout_path(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
