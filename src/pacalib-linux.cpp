@@ -292,7 +292,7 @@ void Draw::SetColourCompose(PaCaLib::ColourCompose mode)
 float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation, float shear_x, float shear_y)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "DrawTextInternal(x=" << x << ", y=" << y << ", mode=" << (int)mode << ", text='" << text << "', size=" << size << ", offset=" << offset << ", aspect=" << aspect << ", rot=" << rotation << ")");
+ SYS_DEBUG(DL_INFO1, "DrawTextInternal(x=" << x << ", y=" << y << ", mode=" << (int)mode << ", text='" << text << "', size=" << size << ", offset=" << offset << ", aspect=" << aspect << ", rot=" << rotation << ", sx=" << shear_x << ", sy=" << shear_y << ")");
 
  // I don't know why, the text rendering is not thread-safe. At least, locking this function resolves some
  // very strange error messages or even crashes.
