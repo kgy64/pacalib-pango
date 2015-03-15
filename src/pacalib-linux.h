@@ -185,11 +185,13 @@ namespace PaCaLinux
         virtual void SetLineCap(PaCaLib::LineCap mode) override;
         virtual void SetColour(float r, float g, float b, float a) override;
         virtual void SetColourCompose(PaCaLib::ColourCompose mode) override;
-        virtual float DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation, float shear_x, float shear_y) override;
-        virtual void SetTextOutlineColour(float r, float g, float b, float a = 1.0) override;
-        virtual void SetTextOutline(float outline) override;
+        virtual float DrawTextInternal(const PaCaLib::Draw::TextParams & params, const PaCaLib::Draw::Distortion * distortion) override;
+        virtual void SetOutlineColour(float r, float g, float b, float a = 1.0) override;
+        virtual void SetOutlineWidth(float outline) override;
         virtual void Paint(void) override;
         virtual PathPtr NewPath(void) override;
+
+        void DrawPath(PaCaLib::Path::DrawMode mode);
 
         PaCaLinux::Target & target;
 
@@ -197,9 +199,9 @@ namespace PaCaLinux
 
         PangoFontDescription * myFontDescription;
 
-        float myTextOutline;
+        float myOutlineWidth;
 
-        PaCaLib::Colour myTextOutlineColour;
+        PaCaLib::Colour myOutlineColour;
 
         float myWidth;
 
@@ -214,13 +216,13 @@ namespace PaCaLinux
 
     class Path: public PaCaLib::Path
     {
-        friend class Draw;
+        friend class PaCaLinux::Draw;
 
      public:
         virtual ~Path();
 
      protected:
-        Path(Draw & parent);
+        Path(PaCaLinux::Draw & parent);
 
         virtual void Move(float x, float y) override;
         virtual void Line(float x, float y) override;
@@ -228,13 +230,12 @@ namespace PaCaLinux
         virtual void Bezier(float x, float y, float dx, float dy) override;
         virtual void Close(void) override;
         virtual void Clear(void) override;
-        virtual void Stroke(void) override;
-        virtual void Fill(void) override;
+        virtual void Draw(PaCaLib::Path::DrawMode mode) override;
 
      private:
         SYS_DEFINE_CLASS_NAME("PaCaLinux::Path");
 
-        Draw & parent;
+        PaCaLinux::Draw & parent;
 
         bool is_bezier;
 

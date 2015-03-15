@@ -182,8 +182,8 @@ Threads::Mutex Draw::myTextMutex;
 Draw::Draw(PaCaLinux::Target & target):
     target(target),
     myCairo(cairo_create(target.getSurface().get())),
-    myTextOutline(0.0),
-    myTextOutlineColour(0.0, 0.0, 0.0, 1.0),
+    myOutlineWidth(0.0),
+    myOutlineColour(0.0, 0.0, 0.0, 1.0),
     myWidth(target.GetWidth()),
     myHeight(target.GetHeight())
 {
@@ -289,10 +289,24 @@ void Draw::SetColourCompose(PaCaLib::ColourCompose mode)
  cairo_set_operator(getCairo(), op);
 }
 
-float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const char * text, float size, float offset, float aspect, float rotation, float shear_x, float shear_y)
+void Draw::SetOutlineColour(float r, float g, float b, float a)
 {
  SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "DrawTextInternal(x=" << x << ", y=" << y << ", mode=" << (int)mode << ", text='" << text << "', size=" << size << ", offset=" << offset << ", aspect=" << aspect << ", rot=" << rotation << ", sx=" << shear_x << ", sy=" << shear_y << ")");
+ SYS_DEBUG(DL_INFO1, "SetOutlineColour(" << r << ", " << g << ", " << b << ", " << a << ")");
+ myOutlineColour = PaCaLib::Colour(r, g, b, a);
+}
+
+void Draw::SetOutlineWidth(float outline)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+ SYS_DEBUG(DL_INFO1, "SetOutlineWidth(" << outline << ")");
+ myOutlineWidth = outline;
+}
+
+float Draw::DrawTextInternal(const PaCaLib::Draw::TextParams & params, const PaCaLib::Draw::Distortion * distortion)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+ SYS_DEBUG(DL_INFO1, "DrawTextInternal(" << params);
 
  // I don't know why, the text rendering is not thread-safe. At least, locking this function resolves some
  // very strange error messages or even crashes.
@@ -304,14 +318,14 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  float h = 0.75;
  float v = 0.75; // Heuristic values :-)
 
- h *= size;
- v *= size;
+ h *= params.size;
+ v *= params.size;
 
  cairo_scale(getCairo(), h, v);
  SYS_DEBUG(DL_INFO1, "cairo_scale(" << h << ", " << v << ") ok");
 
- x /= h;
- y /= v;
+ float x = params.x / h;
+ float y = params.y / v;
 
  // x:y is now the reference point of the text on the target
 
@@ -320,7 +334,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
 
  SYS_DEBUG(DL_INFO1, "layout=" << layout);
 
- pango_layout_set_text(layout, text, -1);
+ pango_layout_set_text(layout, params.text, -1);
  SYS_DEBUG(DL_INFO1, "pango_layout_set_text() ok");
  pango_layout_set_font_description(layout, myFontDescription);
  SYS_DEBUG(DL_INFO1, "pango_layout_set_font_description() ok");
@@ -332,15 +346,15 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  SYS_DEBUG(DL_INFO1, "pango_cairo_update_layout() ok");
  int width, height;
  pango_layout_get_size(layout, &width, &height);
- width *= aspect;
+ width *= params.aspect;
  SYS_DEBUG(DL_INFO1, "pango_layout_get_size(): w=" << width << ", h=" << height);
  float text_width_half = (float)width / (2*PANGO_SCALE);
  float text_height_half = (float)height / (2*PANGO_SCALE);
 
  float xc = -text_width_half;
- float yc = (float)height * offset / (float)(-PANGO_SCALE);
+ float yc = (float)height * params.offset / (float)(-PANGO_SCALE);
 
- switch (mode) {
+ switch (params.mode) {
     case PaCaLib::LEFT:
         xc = 0.0f;
     break;
@@ -355,23 +369,78 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  cairo_translate(getCairo(), x, y);
  SYS_DEBUG(DL_INFO1, "cairo_translate(" << x << ", " << y << ") ok");
 
- if (rotation != 0.0f) {
-    SYS_DEBUG(DL_INFO1, "rotation by " << rotation);
-    cairo_rotate(getCairo(), rotation);
+ if (distortion) {
+    if (distortion->rotation != 0.0f) {
+        SYS_DEBUG(DL_INFO1, "scene rotation by " << distortion.rotation);
+        cairo_rotate(getCairo(), distortion->rotation);
+    }
+
+    if (distortion->obj_size != 1.0f) {
+        cairo_matrix_t m = {
+            distortion->obj_size,   0.0,
+            0.0,                distortion->obj_size,
+            0.0,                0.0
+        };
+        cairo_transform(getCairo(), &m);
+    }
+
+    if (distortion->shear_x != 0.0f) {
+        cairo_matrix_t m = {
+            1.0,                    0.0,
+            -distortion->shear_x,   1.0,
+            0.0,                    0.0
+        };
+        cairo_transform(getCairo(), &m);
+    }
+
+    if (distortion->shear_y != 0.0f) {
+        cairo_matrix_t m = {
+            1.0,    -distortion->shear_y,
+            0.0,    1.0,
+            0.0,    0.0
+        };
+        cairo_transform(getCairo(), &m);
+    }
+
+    if (distortion->scene_height != 1.0f) {
+        cairo_matrix_t m = {
+            1.0,    0.0,
+            0.0,    distortion->scene_height,
+            0.0,    0.0
+        };
+        cairo_transform(getCairo(), &m);
+    }
+
  }
 
- if (shear_x != 0.0f) {
+ if (params.rotation != 0.0f) {
+    SYS_DEBUG(DL_INFO1, "rotation by " << params.rotation);
+    cairo_rotate(getCairo(), params.rotation);
+ }
+
+ if (distortion) {
+    if (distortion->obj_height != 1.0f) {
+        cairo_matrix_t m = {
+            1.0,    0.0,
+            0.0,    distortion->obj_height,
+            0.0,    0.0
+        };
+        cairo_transform(getCairo(), &m);
+    }
+ }
+
+ if (params.shear_x != 0.0f) {
     cairo_matrix_t m = {
-        1.0,        0.0,
-        -shear_x,   1.0,
-        0.0,        0.0
+        1.0,                0.0,
+        -params.shear_x,    1.0,
+        0.0,                0.0
     };
     cairo_transform(getCairo(), &m);
  }
 
- if (shear_y != 0.0f) {
+ if (params.shear_y != 0.0f) {
     cairo_matrix_t m = {
-        1.0,        -shear_y,
+        1.0,        -params.shear_y,
         0.0,        1.0,
         0.0,        0.0
     };
@@ -383,18 +452,20 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  cairo_move_to(getCairo(), xc, yc);
  SYS_DEBUG(DL_INFO1, "cairo_move_to(" << xc << ", " << yc << ")");
 
- cairo_scale(getCairo(), aspect, 1.0);
+ if (params.aspect != 1.0f) {
+    cairo_scale(getCairo(), params.aspect, 1.0);
+ }
 
  pango_cairo_layout_path(getCairo(), layout);
  SYS_DEBUG(DL_INFO1, "pango_cairo_layout_path() ok");
 
- if (myTextOutline < 0.0) {
-    SetLineWidth(-text_height_half * myTextOutline);
+ if (myOutlineWidth < 0.0) {
+    SetLineWidth(text_height_half * -myOutlineWidth);
     cairo_stroke(getCairo());
- } else if (myTextOutline > 0.0) {
+ } else if (myOutlineWidth > 0.0) {
     cairo_fill_preserve(getCairo());
-    SetLineWidth(text_height_half * myTextOutline);
-    PaCaLib::Draw::SetColour(myTextOutlineColour);
+    SetLineWidth(text_height_half * myOutlineWidth);
+    PaCaLib::Draw::SetColour(myOutlineColour);
     cairo_stroke(getCairo());
  } else {
     cairo_fill(getCairo());
@@ -404,21 +475,7 @@ float Draw::DrawTextInternal(float x, float y, PaCaLib::TextMode mode, const cha
  g_object_unref(layout);
  SYS_DEBUG(DL_INFO1, "unref ok");
 
- return (2.0 * h) * text_width_half;
-}
-
-void Draw::SetTextOutlineColour(float r, float g, float b, float a)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "SetTextOutlineColour(" << r << ", " << g << ", " << b << ", " << a << ")");
- myTextOutlineColour = PaCaLib::Colour(r, g, b, a);
-}
-
-void Draw::SetTextOutline(float outline)
-{
- SYS_DEBUG_MEMBER(DM_PACALIB);
- SYS_DEBUG(DL_INFO1, "SetTextOutline(" << outline << ")");
- myTextOutline = outline;
+ return 2.0f * h * text_width_half;
 }
 
 void Draw::Paint(void)
@@ -434,13 +491,38 @@ PathPtr Draw::NewPath(void)
  return PathPtr(new Path(*this));
 }
 
+void Draw::DrawPath(PaCaLib::Path::DrawMode mode)
+{
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
+ switch (mode) {
+    case PaCaLib::Path::DRAW_STROKE:
+        SYS_DEBUG(DL_INFO1, "Path is drawn with \"stroke\".");
+        cairo_stroke(getCairo());
+    break;
+    case PaCaLib::Path::DRAW_FILL:
+        SYS_DEBUG(DL_INFO1, "Path is drawn with \"fill\".");
+        cairo_fill(getCairo());
+    break;
+    case PaCaLib::Path::DRAW_STROKE_AND_FILL:
+        SYS_DEBUG(DL_INFO1, "Path is drawn with \"stroke and fill\".");
+        cairo_fill_preserve(getCairo());
+        PaCaLib::Draw::SetColour(myOutlineColour);
+        cairo_stroke(getCairo());
+    break;
+    default:
+        SYS_DEBUG(DL_INFO2, "Path is not drawn.");
+    break;
+ }
+}
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
  *                                                                                       *
  *         class Path:                                                                   *
  *                                                                                       *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-Path::Path(Draw & parent):
+Path::Path(PaCaLinux::Draw & parent):
     parent(parent),
     is_bezier(false),
     bezier_dx(0.0f),
@@ -460,21 +542,29 @@ Path::~Path()
 
 void Path::Move(float x, float y)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_move_to(parent.getCairo(), x, y);
 }
 
 void Path::Line(float x, float y)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_line_to(parent.getCairo(), x, y);
 }
 
 void Path::Arc(float xc, float yc, float r, float a1, float a2)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_arc(parent.getCairo(), xc, yc, r, a1, a2);
 }
 
 void Path::Bezier(float x, float y, float dx, float dy)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  if (is_bezier) {
     double px, py;
     cairo_get_current_point(parent.getCairo(), &px, &py);
@@ -492,23 +582,22 @@ void Path::Bezier(float x, float y, float dx, float dy)
 
 void Path::Close(void)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_close_path(parent.getCairo());
 }
 
 void Path::Clear(void)
 {
+ SYS_DEBUG_MEMBER(DM_PACALIB);
+
  cairo_new_path(parent.getCairo());
  is_bezier = false;
 }
 
-void Path::Stroke(void)
+void Path::Draw(PaCaLib::Path::DrawMode mode)
 {
- cairo_stroke_preserve(parent.getCairo());
-}
-
-void Path::Fill(void)
-{
- cairo_fill_preserve(parent.getCairo());
+ parent.DrawPath(mode);
 }
 
 /* * * * * * * * * * * * * End - of - File * * * * * * * * * * * * * * */
