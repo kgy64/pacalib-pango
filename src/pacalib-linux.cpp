@@ -371,7 +371,7 @@ float Draw::DrawTextInternal(const PaCaLib::Draw::TextParams & params, const PaC
 
  if (distortion) {
     if (distortion->rotation != 0.0f) {
-        SYS_DEBUG(DL_INFO1, "scene rotation by " << distortion.rotation);
+        SYS_DEBUG(DL_INFO1, "scene rotation by " << distortion->rotation);
         cairo_rotate(getCairo(), distortion->rotation);
     }
 
