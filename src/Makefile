@@ -10,17 +10,5 @@ VERS_MINOR           =  1
 
 BASE_LIBRARIES       =  pangocairo
 
-export SRCDIR        =  .
-
-.PHONY: all
-all: _everything
-
 include $(SCRIPTDIR)/makelib
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-.PHONY: clean
-clean:
-	@echo " - Cleaning $(NAME)..."
-	@rm -f $(BINDIR)/* $(OBJECTS) $(Y_CPPFILES) $(Y_HEADERS) $(DEPENDS)
 
