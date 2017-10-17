@@ -1,0 +1,11 @@
+PaCaLib-Pango: my 2D rendering library implementation for Linux
+---------------------------------------------------------------
+
+This is an object-oriented interface to draw graphics primitives including lines, circles, text, etc...
+The Pango/Cairo based implementation for Linux and Unix-like operating systems.
+
+Based on the following external libraries:
+- cairo     www.cairographics.org                   For rendering graphics primitives
+- pango     www.pango.org                           For rendering international text
+- makesys   https://github.com/kgy64/makesys.git        My build system
+
